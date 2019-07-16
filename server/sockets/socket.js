@@ -1,27 +1,41 @@
 const { io } = require('../server');
 
-io.on('connection', (client) => {
-    console.log('Usuario conectado');
-    //console.log(client);
+const { TicketControl } = require('../classes/ticket-control');
 
-    client.on('disconnect', () => {
+const ticketControl = new TicketControl();
+
+io.on('connection', (socket) => {
+    console.log('Usuario conectado');
+
+    socket.on('disconnect', () => {
         console.log('Usuario desconectado');
     });
 
-    client.on('sendData', (data, callback) => {
-        console.log(data);
-
-        client.broadcast.emit('sendData', data);
-        /*if (data.author) {
-            callback({ response: 'Conexión exitosa' });
-        } else {
-            callback({ response: 'Falla en la conexión' });
-        }*/
+    socket.on('getNextTicket', (data, callback) => {
+        callback(ticketControl.nextTicket());
     });
 
-    client.emit('sendData', {
-        author: 'Server',
-        text: 'Welcome to application',
-        date: new Date()
+    socket.on('attendTicket', (data, callback) => {
+        if (!data.desktopId) {
+            callback({ ok: false, message: 'El escritorio es necesario' });
+        } else {
+            let resp = ticketControl.attendTicket(data.desktopId);
+
+            if (typeof resp === 'string') {
+                callback({ ok: false, message: resp });
+            } else {
+                callback({ ok: true, ticket: resp });
+
+                socket.broadcast.emit('getActualStatus', {
+                    initial: ticketControl.initialTicket(),
+                    lastFour: ticketControl.lastFourTickets()
+                });
+            }
+        }
+    });
+
+    socket.emit('getActualStatus', {
+        initial: ticketControl.initialTicket(),
+        lastFour: ticketControl.lastFourTickets()
     });
 });

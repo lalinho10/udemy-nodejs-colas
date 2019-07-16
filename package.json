@@ -1,5 +1,5 @@
 {
-    "name": "08-sockets",
+    "name": "09-tickets",
     "version": "1.0.0",
     "description": "Aplicación para uso de sockets en NodeJS",
     "main": "index.js",
